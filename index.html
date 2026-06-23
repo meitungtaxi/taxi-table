@@ -44,6 +44,11 @@
             td { height: 26px; }
             .print-area { overflow-x: visible; }
         }
+        @media print {
+    @page {
+        margin: 5mm; /* 保持邊距，但隱藏瀏覽器預設的頁首頁尾 */
+    }
+}
     </style>
 </head>
 <body>
