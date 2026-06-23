@@ -3,68 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>的士車行更表生成器 (香港全假期精準版)</title>
+    <title>的士車行更表生成器 (實物對齊滿版)</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; padding: 15px; font-weight: bold; color: #000; }
+        body { font-family: "Microsoft JhengHei", Arial, sans-serif; padding: 10px; font-weight: bold; color: #000; background-color: #fff; }
         
-        /* 專門為手機優化的輸入面板 */
-        .input-panel { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
-        .input-group { display: inline-block; margin-right: 15px; margin-bottom: 12px; }
+        /* 輸入面板樣式 */
+        .input-panel { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
+        .input-group { display: inline-block; margin-right: 15px; margin-bottom: 12px; vertical-align: top; }
         .input-group label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 15px; }
         
-        /* 放大手機點擊區域 */
-        select, input { padding: 12px 10px; font-size: 16px; font-weight: bold; border: 2px solid #bbb; border-radius: 6px; width: 100%; min-width: 140px; background-color: #fff; }
+        select, input { padding: 10px; font-size: 16px; font-weight: bold; border: 2px solid #bbb; border-radius: 6px; width: 100%; min-width: 140px; background-color: #fff; }
         select { -webkit-appearance: select; cursor: pointer; }
         .inline-inputs .input-group { width: 45%; display: inline-block; }
+        
+        .wide-input { width: 100% !important; }
         
         .button-group { margin-top: 10px; }
         button { padding: 12px 20px; font-size: 16px; font-weight: bold; color: white; border: none; cursor: pointer; border-radius: 5px; margin-right: 10px; margin-bottom: 10px; }
         .btn-blue { background: #007bff; }
         .btn-green { background: #28a745; }
         
-        /* 表格範圍 */
-        .print-area { width: 100%; max-width: 680px; margin: 0 auto; overflow-x: auto; }
-        .header-title { font-size: 28px; font-weight: bold; text-decoration: underline; margin-bottom: 15px; text-align: center; }
-        
-        /* 表格樣式 - 固定布局確保等寬 */
-        table { width: 100%; border-collapse: collapse; text-align: center; font-weight: bold; min-width: 600px; table-layout: fixed; }
-        th, td { border: 1.5px solid #000; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th { background-color: #f2f2f2; padding: 8px 4px; font-size: 15px; }
-        
-        td { height: 28px; }
-        
-        /* 紅日與星期日的美化樣式 */
-        .holiday { color: #d9534f; background-color: #fff9f9; }
-        
-        @page {
-            size: A4;
-            margin: 10mm 12mm;
+        /* 列印主範圍：強制設定高度以撐滿頁面 */
+        .print-area { 
+            width: 100%; 
+            max-width: 100%; 
+            margin: 0 auto; 
+            display: flex;
+            flex-direction: column;
+            height: 92vh; 
         }
+        
+        /* 車牌大標題 */
+        .header-title { font-size: 32px; font-weight: 900; margin-bottom: 12px; text-align: left; padding-left: 5px; }
+        
+        /* 表格完全填滿剩餘高度 */
+        table { width: 100%; border-collapse: collapse; text-align: center; font-weight: bold; table-layout: fixed; flex: 1; height: 100%; }
+        th, td { border: 2px solid #000; font-size: 17px; font-weight: 900; }
+        
+        th { background-color: #e9e9e9; padding: 10px 2px; font-size: 18px; }
+        
+        /* 紅日與星期日樣式 */
+        .holiday { color: #d9534f; background-color: #fff5f5; }
+        
+        /* A4 嚴格單頁與微留白邊距設定 */
+        @page {
+            size: A4 portrait;
+            margin: 12mm 10mm 15mm 10mm; 
+        }
+        
         @media print {
             .input-panel { display: none; }
-            body { padding: 0; background-color: #fff; }
-            td { height: 26px; }
-            .print-area { overflow-x: visible; }
-            .holiday { color: #000; background-color: #fff; } /* 列印時保持高對比度純黑白 */
-        }
-        @media print {
-            body {
-                transform: scale(0.95);
-                transform-origin: top center;
+            body { padding: 0; margin: 0; background-color: #fff; color: #000; }
+            
+            .print-area { 
+                height: 96%; 
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
             }
-        }
-        @media print {
-            @page {
-                margin: 5mm;
-            }
+            
+            .header-title { font-size: 34px; margin-bottom: 10px; margin-top: 5px; }
+            th { font-size: 18px; padding: 8px 2px; }
+            td { font-size: 17px; }
+            
+            .holiday { color: #000; background-color: #fff; }
         }
     </style>
 </head>
 <body>
 
     <div class="input-panel">
-        <h3 style="margin-top:0; color:#333;">🚕 的士更表資料輸入 (香港全假期精準版)</h3>
+        <h3 style="margin-top:0; color:#333;">🚕 的士更表資料輸入 (2026-2028)</h3>
         
         <div class="input-group" style="width: 100%;">
             <label>的士款式：</label>
@@ -88,6 +100,26 @@
                 <label>月份：</label>
                 <input type="number" id="month" value="6" min="1" max="12">
             </div>
+        </div>
+        
+        <div class="inline-inputs">
+            <div class="input-group">
+                <label>早更司機姓名：</label>
+                <input type="text" id="dayDriver" value="">
+            </div>
+            <div class="input-group">
+                <label>夜更司機姓名：</label>
+                <input type="text" id="nightDriver" value="">
+            </div>
+        </div>
+
+        <div class="input-group wide-input">
+            <label>早更放假/留空日期 (例如: 5, 12, 23)：</label>
+            <input type="text" id="dayOffDays" value="" placeholder="多個日期請用逗號分開">
+        </div>
+        <div class="input-group wide-input">
+            <label>夜更放假/留空日期 (例如: 6, 13, 24)：</label>
+            <input type="text" id="nightOffDays" value="" placeholder="多個日期請用逗號分開">
         </div>
         
         <div class="inline-inputs">
@@ -127,34 +159,34 @@
             generateTable(); 
         }
 
-        // 內置香港公眾假期數據庫 (包含 2026 年完整公眾假期)
         function isHKPublicHoliday(year, month, day) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dateStr = year + "-" + month + "-" + day;
             
-            // 2026年香港公眾假期清單 (特區政府發佈)
-            const holidays2026 = [
-                "2026-01-01", // 元旦
-                "2026-02-17", "2026-02-18", "2026-02-19", // 農曆新年
-                "2026-04-03", "2026-04-04", "2026-04-06", // 耶穌受難、清明節、復活節
-                "2026-05-01", // 勞動節
-                "2026-05-22", // 佛誕
-                "2026-06-19", // 端午節
-                "2026-07-01", // 特區紀念日
-                "2026-09-26", // 中秋節翌日
-                "2026-10-01", // 國慶
-                "2026-10-19", // 重陽節
-                "2026-12-25", "2026-12-26" // 聖誕節及節禮日
-            ];
+            if (month === 1 && day === 1) return true; 
+            if (month === 5 && day === 1) return true; 
+            if (month === 7 && day === 1) return true; 
+            if (month === 10 && day === 1) return true; 
+            if (month === 12 && (day === 25 || day === 26)) return true; 
 
-            // 考慮到車行老細可能未來幾年也會用，這裡留存常用的固定西曆紅日作為防呆備用
-            if (holidays2026.includes(dateStr)) return true;
-            if (month === 1 && day === 1) return true;
-            if (month === 5 && day === 1) return true;
-            if (month === 7 && day === 1) return true;
-            if (month === 10 && day === 1) return true;
-            if (month === 12 && (day === 25 || day === 26)) return true;
+            const dynamicHolidays = {
+                2026: ["2026-2-17", "2026-2-18", "2026-2-19", "2026-4-3", "2026-4-4", "2026-4-6", "2026-4-7", "2026-5-2", "2026-5-25", "2026-6-19", "2026-9-26", "2026-10-19", "2026-12-28"],
+                2027: ["2027-2-6", "2027-2-8", "2027-2-9", "2027-3-26", "2027-3-27", "2027-3-29", "2027-4-5", "2027-5-13", "2027-6-9", "2027-9-16", "2027-10-8", "2027-12-27"],
+                2028: ["2028-1-3", "2028-1-26", "2028-1-27", "2028-1-28", "2028-4-4", "2028-4-14", "2028-4-15", "2028-4-17", "2028-5-2", "2028-5-29", "2028-10-2", "2028-10-4", "2028-10-26"],
+                2029: ["2029-2-13", "2029-2-14", "2029-2-15", "2029-3-30", "2029-3-31", "2029-4-2", "2029-4-4", "2029-5-21", "2029-6-16", "2029-9-24", "2029-10-16", "2029-12-27"],
+                2030: ["2030-2-2", "2030-2-4", "2030-2-5", "2030-4-5", "2030-4-19", "2030-4-20", "2030-4-22", "2030-5-9", "2030-6-5", "2030-9-13", "2030-10-7", "2030-12-27"]
+            };
 
+            if (dynamicHolidays[year] && dynamicHolidays[year].includes(dateStr)) {
+                return true;
+            }
             return false;
+        }
+
+        function parseOffDays(inputStr) {
+            if (!inputStr) return [];
+            return inputStr.split(',')
+                           .map(day => parseInt(day.trim()))
+                           .filter(day => !isNaN(day));
         }
 
         function generateTable() {
@@ -164,23 +196,29 @@
             const baseDayPrice = parseInt(document.getElementById('dayPrice').value) || 0;
             const baseNightPrice = parseInt(document.getElementById('nightPrice').value) || 0;
             const discount = parseInt(document.getElementById('discountPrice').value) || 0;
+            
+            const dayDriver = document.getElementById('dayDriver').value;
+            const nightDriver = document.getElementById('nightDriver').value;
+
+            const dayOffList = parseOffDays(document.getElementById('dayOffDays').value);
+            const nightOffList = parseOffDays(document.getElementById('nightOffDays').value);
 
             const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
             const daysInMonth = new Date(year, month, 0).getDate();
 
-            let html = `<div class="header-title">的士更表 (${carNo})</div>`;
+            let html = `<div class="header-title">車牌：${carNo}</div>`;
             
             html += `<table>
                 <thead>
                     <tr>
-                        <th style="width: 16%;">日期</th>
+                        <th style="width: 22%;">日期</th>
                         <th style="width: 10%;">星期</th>
                         <th style="width: 14%;">早更</th>
                         <th style="width: 11%;">金額</th>
-                        <th style="width: 17%;">簽署</th>
+                        <th style="width: 16%;">簽署</th>
                         <th style="width: 14%;">夜更</th>
                         <th style="width: 11%;">金額</th>
-                        <th style="width: 17%;">簽署</th>
+                        <th style="width: 16%;">簽署</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -191,24 +229,26 @@
                 let dayIdx = dateObj.getDay();
                 let dayOfWeek = weekdays[dayIdx];
                 
-                // 判斷是否為星期日或香港真正的公眾假期
                 let isSun = (dayIdx === 0);
                 let isPubHoliday = isHKPublicHoliday(year, month, d);
                 let isRedDay = isSun || isPubHoliday;
 
-                // 計算當天實際租金
                 let currentDayPrice = isRedDay ? (baseDayPrice - discount) : baseDayPrice;
                 let currentNightPrice = isRedDay ? (baseNightPrice - discount) : baseNightPrice;
 
                 let rowClass = isRedDay ? 'class="holiday"' : '';
                 
+                // 檢查是否放假，放假或沒填都直接變完全空白（&nbsp;）
+                let finalDayDriver = (dayOffList.includes(d) || dayDriver === "") ? '&nbsp;' : dayDriver;
+                let finalNightDriver = (nightOffList.includes(d) || nightDriver === "") ? '&nbsp;' : nightDriver;
+
                 html += `<tr ${rowClass}>
                     <td>${dateStr}</td>
                     <td>${dayOfWeek}</td>
-                    <td>&nbsp;</td>
+                    <td>${finalDayDriver}</td>
                     <td>${currentDayPrice}</td>
                     <td>&nbsp;</td>
-                    <td>&nbsp;</td>
+                    <td>${finalNightDriver}</td>
                     <td>${currentNightPrice}</td>
                     <td>&nbsp;</td>
                 </tr>`;
