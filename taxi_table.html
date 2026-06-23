@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>的士車行更表生成器 (手機/A4完美版)</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 15px; font-weight: bold; color: #000; }
+        
+        /* 專門為手機優化的輸入面板：按鈕和選單放大，方便手指點擊 */
+        .input-panel { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
+        .input-group { display: inline-block; margin-right: 15px; margin-bottom: 12px; }
+        .input-group label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 15px; }
+        
+        /* 放大手機點擊區域 */
+        select, input { padding: 10px 8px; font-size: 16px; font-weight: bold; border: 1px solid #ccc; border-radius: 4px; width: 100%; min-width: 120px; }
+        .inline-inputs .input-group { width: 45%; display: inline-block; }
+        
+        .button-group { margin-top: 10px; }
+        button { padding: 12px 20px; font-size: 16px; font-weight: bold; color: white; border: none; cursor: pointer; border-radius: 5px; margin-right: 10px; margin-bottom: 10px; }
+        .btn-blue { background: #007bff; }
+        .btn-green { background: #28a745; }
+        
+        /* 表格範圍 */
+        .print-area { width: 100%; max-width: 680px; margin: 0 auto; overflow-x: auto; } /* 手機上如果太寬可以左右滑動，不崩潰 */
+        .header-title { font-size: 26px; font-weight: bold; text-decoration: underline; margin-bottom: 12px; }
+        
+        /* 表格樣式 */
+        table { width: 100%; border-collapse: collapse; text-align: center; font-weight: bold; min-width: 600px; }
+        th, td { border: 1.5px solid #000; font-size: 14px; font-weight: bold; }
+        th { background-color: #f2f2f2; padding: 6px 4px; font-size: 15px; }
+        
+        td { height: 28px; }
+        .parentheses-right { text-align: right; padding-right: 12px; }
+        
+        /* A4 列印設定 */
+        @page {
+            size: A4;
+            margin: 10mm 12mm;
+        }
+        @media print {
+            .input-panel { display: none; }
+            body { padding: 0; background-color: #fff; }
+            td { height: 26px; }
+            .print-area { overflow-x: visible; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="input-panel">
+        <h3 style="margin-top:0; color:#333;">🚕 的士更表資料輸入 (手機兼容版)</h3>
+        
+        <div class="input-group" style="width: 100%;">
+            <label>的士款式：</label>
+            <select id="taxiType" onchange="updateDefaultPrices()">
+                <option value="小露寶">小露寶 (混能的士)</option>
+                <option value="舊四">舊四 (金豐的士)</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label>車牌：</label>
+            <input type="text" id="carNo" value="AB 1234">
+        </div>
+        
+        <div class="inline-inputs">
+            <div class="input-group">
+                <label>年份：</label>
+                <input type="number" id="year" value="2026">
+            </div>
+            <div class="input-group">
+                <label>月份：</label>
+                <input type="number" id="month" value="6" min="1" max="12">
+            </div>
+        </div>
+        
+        <div class="inline-inputs">
+            <div class="input-group">
+                <label>早更租金：</label>
+                <input type="number" id="dayPrice" value="560">
+            </div>
+            <div class="input-group">
+                <label>夜更租金：</label>
+                <input type="number" id="nightPrice" value="510">
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-blue" onclick="generateTable()">生成簽收表</button>
+            <button class="btn-green" onclick="window.print()">列印 / 儲存 PDF</button>
+        </div>
+    </div>
+
+    <div class="print-area" id="printArea">
+        </div>
+
+    <script>
+        function updateDefaultPrices() {
+            const taxiType = document.getElementById('taxiType').value;
+            if (taxiType === '小露寶') {
+                document.getElementById('dayPrice').value = 560;
+                document.getElementById('nightPrice').value = 510;
+            } else if (taxiType === '舊四') {
+                document.getElementById('dayPrice').value = 480;  
+                document.getElementById('nightPrice').value = 430; 
+            }
+            generateTable(); 
+        }
+
+        function generateTable() {
+            const carNo = document.getElementById('carNo').value;
+            const year = parseInt(document.getElementById('year').value);
+            const month = parseInt(document.getElementById('month').value);
+            const dayPrice = document.getElementById('dayPrice').value;
+            const nightPrice = document.getElementById('nightPrice').value;
+
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            let html = `<div class="header-title">車牌：${carNo}</div>`;
+            html += `<table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">日期</th>
+                        <th style="width: 9%;">星期</th>
+                        <th style="width: 15%;">早更</th>
+                        <th style="width: 10%;">金額</th>
+                        <th style="width: 16%;">簽署</th>
+                        <th style="width: 15%;">夜更</th>
+                        <th style="width: 10%;">金額</th>
+                        <th style="width: 16%;">簽署</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                let dateStr = `${d < 10 ? '0' + d : d}/${month < 10 ? '0' + month : month}/${year}`;
+                let dayOfWeek = weekdays[new Date(year, month - 1, d).getDay()];
+                
+                html += `<tr>
+                    <td>${dateStr}</td>
+                    <td>${dayOfWeek}</td>
+                    <td class="parentheses-right">(   )</td>
+                    <td>${dayPrice}</td>
+                    <td></td>
+                    <td class="parentheses-right">(   )</td>
+                    <td>${nightPrice}</td>
+                    <td></td>
+                </tr>`;
+            }
+
+            html += `</tbody></table>`;
+            document.getElementById('printArea').innerHTML = html;
+        }
+        
+        window.onload = generateTable;
+    </script>
+
+</body>
+</html>
