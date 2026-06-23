@@ -45,6 +45,12 @@
             .print-area { overflow-x: visible; }
         }
         @media print {
+    body {
+        transform: scale(0.95); /* 整體畫面縮小 95% */
+        transform-origin: top center;
+    }
+}
+        @media print {
     @page {
         margin: 5mm; /* 保持邊距，但隱藏瀏覽器預設的頁首頁尾 */
     }
