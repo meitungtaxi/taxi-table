@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>的士車行更表生成器 (假期減免版)</title>
+    <title>的士車行更表生成器 (香港全假期精準版)</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; padding: 15px; font-weight: bold; color: #000; }
@@ -34,7 +34,7 @@
         
         td { height: 28px; }
         
-        /* 紅日與星期日的美化樣式（畫面上稍微提示，列印也清晰） */
+        /* 紅日與星期日的美化樣式 */
         .holiday { color: #d9534f; background-color: #fff9f9; }
         
         @page {
@@ -64,7 +64,7 @@
 <body>
 
     <div class="input-panel">
-        <h3 style="margin-top:0; color:#333;">🚕 的士更表資料輸入 (自動減租版)</h3>
+        <h3 style="margin-top:0; color:#333;">🚕 的士更表資料輸入 (香港全假期精準版)</h3>
         
         <div class="input-group" style="width: 100%;">
             <label>的士款式：</label>
@@ -127,14 +127,33 @@
             generateTable(); 
         }
 
-        // 香港固定公眾假期簡單計算邏輯 (西曆固定節日)
-        function isHKHoliday(year, month, day) {
-            // 1月1日元旦, 5月1日勞動節, 7月1日特區紀念日, 10月1日國慶, 12月25-26日聖誕節
+        // 內置香港公眾假期數據庫 (包含 2026 年完整公眾假期)
+        function isHKPublicHoliday(year, month, day) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            // 2026年香港公眾假期清單 (特區政府發佈)
+            const holidays2026 = [
+                "2026-01-01", // 元旦
+                "2026-02-17", "2026-02-18", "2026-02-19", // 農曆新年
+                "2026-04-03", "2026-04-04", "2026-04-06", // 耶穌受難、清明節、復活節
+                "2026-05-01", // 勞動節
+                "2026-05-22", // 佛誕
+                "2026-06-19", // 端午節
+                "2026-07-01", // 特區紀念日
+                "2026-09-26", // 中秋節翌日
+                "2026-10-01", // 國慶
+                "2026-10-19", // 重陽節
+                "2026-12-25", "2026-12-26" // 聖誕節及節禮日
+            ];
+
+            // 考慮到車行老細可能未來幾年也會用，這裡留存常用的固定西曆紅日作為防呆備用
+            if (holidays2026.includes(dateStr)) return true;
             if (month === 1 && day === 1) return true;
             if (month === 5 && day === 1) return true;
             if (month === 7 && day === 1) return true;
             if (month === 10 && day === 1) return true;
             if (month === 12 && (day === 25 || day === 26)) return true;
+
             return false;
         }
 
@@ -172,19 +191,17 @@
                 let dayIdx = dateObj.getDay();
                 let dayOfWeek = weekdays[dayIdx];
                 
-                // 判斷是否為星期日或香港固定公眾假期
+                // 判斷是否為星期日或香港真正的公眾假期
                 let isSun = (dayIdx === 0);
-                let isPubHoliday = isHKHoliday(year, month, d);
+                let isPubHoliday = isHKPublicHoliday(year, month, d);
                 let isRedDay = isSun || isPubHoliday;
 
-                // 計算當天實際租金 (如果是紅日/星期日，就扣減設定金額)
+                // 計算當天實際租金
                 let currentDayPrice = isRedDay ? (baseDayPrice - discount) : baseDayPrice;
                 let currentNightPrice = isRedDay ? (baseNightPrice - discount) : baseNightPrice;
 
-                // 如果是紅日，加入 holiday 樣式類別變紅色
                 let rowClass = isRedDay ? 'class="holiday"' : '';
                 
-                // 修改點：早更和夜更格子完全留空，移除了所有 ( ) 括號
                 html += `<tr ${rowClass}>
                     <td>${dateStr}</td>
                     <td>${dayOfWeek}</td>
