@@ -2,18 +2,20 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>的士車行更表生成器 (手機/A4完美版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>的士車行更表生成器 (假期減免版)</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; padding: 15px; font-weight: bold; color: #000; }
         
-        /* 專門為手機優化的輸入面板：按鈕和選單放大，方便手指點擊 */
+        /* 專門為手機優化的輸入面板 */
         .input-panel { background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
         .input-group { display: inline-block; margin-right: 15px; margin-bottom: 12px; }
         .input-group label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 15px; }
         
         /* 放大手機點擊區域 */
-        select, input { padding: 10px 8px; font-size: 16px; font-weight: bold; border: 1px solid #ccc; border-radius: 4px; width: 100%; min-width: 120px; }
+        select, input { padding: 12px 10px; font-size: 16px; font-weight: bold; border: 2px solid #bbb; border-radius: 6px; width: 100%; min-width: 140px; background-color: #fff; }
+        select { -webkit-appearance: select; cursor: pointer; }
         .inline-inputs .input-group { width: 45%; display: inline-block; }
         
         .button-group { margin-top: 10px; }
@@ -22,18 +24,19 @@
         .btn-green { background: #28a745; }
         
         /* 表格範圍 */
-        .print-area { width: 100%; max-width: 680px; margin: 0 auto; overflow-x: auto; } /* 手機上如果太寬可以左右滑動，不崩潰 */
-        .header-title { font-size: 26px; font-weight: bold; text-decoration: underline; margin-bottom: 12px; }
+        .print-area { width: 100%; max-width: 680px; margin: 0 auto; overflow-x: auto; }
+        .header-title { font-size: 28px; font-weight: bold; text-decoration: underline; margin-bottom: 15px; text-align: center; }
         
-        /* 表格樣式 */
-        table { width: 100%; border-collapse: collapse; text-align: center; font-weight: bold; min-width: 600px; }
-        th, td { border: 1.5px solid #000; font-size: 14px; font-weight: bold; }
-        th { background-color: #f2f2f2; padding: 6px 4px; font-size: 15px; }
+        /* 表格樣式 - 固定布局確保等寬 */
+        table { width: 100%; border-collapse: collapse; text-align: center; font-weight: bold; min-width: 600px; table-layout: fixed; }
+        th, td { border: 1.5px solid #000; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th { background-color: #f2f2f2; padding: 8px 4px; font-size: 15px; }
         
         td { height: 28px; }
-        .parentheses-right { text-align: right; padding-right: 12px; }
         
-        /* A4 列印設定 */
+        /* 紅日與星期日的美化樣式（畫面上稍微提示，列印也清晰） */
+        .holiday { color: #d9534f; background-color: #fff9f9; }
+        
         @page {
             size: A4;
             margin: 10mm 12mm;
@@ -43,24 +46,25 @@
             body { padding: 0; background-color: #fff; }
             td { height: 26px; }
             .print-area { overflow-x: visible; }
+            .holiday { color: #000; background-color: #fff; } /* 列印時保持高對比度純黑白 */
         }
         @media print {
-    body {
-        transform: scale(0.95); /* 整體畫面縮小 95% */
-        transform-origin: top center;
-    }
-}
+            body {
+                transform: scale(0.95);
+                transform-origin: top center;
+            }
+        }
         @media print {
-    @page {
-        margin: 5mm; /* 保持邊距，但隱藏瀏覽器預設的頁首頁尾 */
-    }
-}
+            @page {
+                margin: 5mm;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="input-panel">
-        <h3 style="margin-top:0; color:#333;">🚕 的士更表資料輸入 (手機兼容版)</h3>
+        <h3 style="margin-top:0; color:#333;">🚕 的士更表資料輸入 (自動減租版)</h3>
         
         <div class="input-group" style="width: 100%;">
             <label>的士款式：</label>
@@ -96,6 +100,11 @@
                 <input type="number" id="nightPrice" value="510">
             </div>
         </div>
+
+        <div class="input-group" style="width: 100%;">
+            <label>紅日 / 星期日減收金額 ($)：</label>
+            <input type="number" id="discountPrice" value="50">
+        </div>
         
         <div class="button-group">
             <button class="btn-blue" onclick="generateTable()">生成簽收表</button>
@@ -103,8 +112,7 @@
         </div>
     </div>
 
-    <div class="print-area" id="printArea">
-        </div>
+    <div class="print-area" id="printArea"></div>
 
     <script>
         function updateDefaultPrices() {
@@ -119,45 +127,73 @@
             generateTable(); 
         }
 
+        // 香港固定公眾假期簡單計算邏輯 (西曆固定節日)
+        function isHKHoliday(year, month, day) {
+            // 1月1日元旦, 5月1日勞動節, 7月1日特區紀念日, 10月1日國慶, 12月25-26日聖誕節
+            if (month === 1 && day === 1) return true;
+            if (month === 5 && day === 1) return true;
+            if (month === 7 && day === 1) return true;
+            if (month === 10 && day === 1) return true;
+            if (month === 12 && (day === 25 || day === 26)) return true;
+            return false;
+        }
+
         function generateTable() {
             const carNo = document.getElementById('carNo').value;
             const year = parseInt(document.getElementById('year').value);
             const month = parseInt(document.getElementById('month').value);
-            const dayPrice = document.getElementById('dayPrice').value;
-            const nightPrice = document.getElementById('nightPrice').value;
+            const baseDayPrice = parseInt(document.getElementById('dayPrice').value) || 0;
+            const baseNightPrice = parseInt(document.getElementById('nightPrice').value) || 0;
+            const discount = parseInt(document.getElementById('discountPrice').value) || 0;
 
             const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
             const daysInMonth = new Date(year, month, 0).getDate();
 
-            let html = `<div class="header-title">車牌：${carNo}</div>`;
+            let html = `<div class="header-title">的士更表 (${carNo})</div>`;
+            
             html += `<table>
                 <thead>
                     <tr>
-                        <th style="width: 15%;">日期</th>
-                        <th style="width: 9%;">星期</th>
-                        <th style="width: 15%;">早更</th>
-                        <th style="width: 10%;">金額</th>
-                        <th style="width: 16%;">簽署</th>
-                        <th style="width: 15%;">夜更</th>
-                        <th style="width: 10%;">金額</th>
-                        <th style="width: 16%;">簽署</th>
+                        <th style="width: 16%;">日期</th>
+                        <th style="width: 10%;">星期</th>
+                        <th style="width: 14%;">早更</th>
+                        <th style="width: 11%;">金額</th>
+                        <th style="width: 17%;">簽署</th>
+                        <th style="width: 14%;">夜更</th>
+                        <th style="width: 11%;">金額</th>
+                        <th style="width: 17%;">簽署</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
             for (let d = 1; d <= daysInMonth; d++) {
                 let dateStr = `${d < 10 ? '0' + d : d}/${month < 10 ? '0' + month : month}/${year}`;
-                let dayOfWeek = weekdays[new Date(year, month - 1, d).getDay()];
+                const dateObj = new Date(year, month - 1, d);
+                let dayIdx = dateObj.getDay();
+                let dayOfWeek = weekdays[dayIdx];
                 
-                html += `<tr>
+                // 判斷是否為星期日或香港固定公眾假期
+                let isSun = (dayIdx === 0);
+                let isPubHoliday = isHKHoliday(year, month, d);
+                let isRedDay = isSun || isPubHoliday;
+
+                // 計算當天實際租金 (如果是紅日/星期日，就扣減設定金額)
+                let currentDayPrice = isRedDay ? (baseDayPrice - discount) : baseDayPrice;
+                let currentNightPrice = isRedDay ? (baseNightPrice - discount) : baseNightPrice;
+
+                // 如果是紅日，加入 holiday 樣式類別變紅色
+                let rowClass = isRedDay ? 'class="holiday"' : '';
+                
+                // 修改點：早更和夜更格子完全留空，移除了所有 ( ) 括號
+                html += `<tr ${rowClass}>
                     <td>${dateStr}</td>
                     <td>${dayOfWeek}</td>
-                    <td class="parentheses-right">(   )</td>
-                    <td>${dayPrice}</td>
-                    <td></td>
-                    <td class="parentheses-right">(   )</td>
-                    <td>${nightPrice}</td>
-                    <td></td>
+                    <td>&nbsp;</td>
+                    <td>${currentDayPrice}</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>${currentNightPrice}</td>
+                    <td>&nbsp;</td>
                 </tr>`;
             }
 
